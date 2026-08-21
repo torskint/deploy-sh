@@ -56,7 +56,11 @@ require_cmd composer
 # ---------------------------------------------------------------------------
 # 2. Authentification GitHub
 # ---------------------------------------------------------------------------
-: "${GITHUB_TOKEN:?La variable GITHUB_TOKEN doit etre definie.}"
+if [ -z "${GITHUB_TOKEN:-}" ]; then
+    read -r -s -p "Token GitHub (avec acces aux repos prives concernes) : " GITHUB_TOKEN
+    echo ""
+fi
+[ -n "$GITHUB_TOKEN" ] || err "un token GitHub est requis."
 
 # ---------------------------------------------------------------------------
 # 3. Recuperation de la config (repo prive)
