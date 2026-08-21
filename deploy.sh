@@ -82,6 +82,13 @@ if [ -z "${GITHUB_TOKEN:-}" ]; then
 fi
 [ -n "$GITHUB_TOKEN" ] || err "un token GitHub est requis."
 
+# Donne le token a Composer : sans ca, Composer ne peut pas telecharger les
+# archives .zip des dependances privees hebergees sur GitHub (utilisees par
+# composer.json des sites, ex. packages prives de l'organisation) et retombe
+# sur un clone git "source", qui necessite proc_open (souvent desactive sur
+# les hebergements mutualises).
+export COMPOSER_AUTH="{\"github-oauth\": {\"github.com\": \"${GITHUB_TOKEN}\"}}"
+
 # ---------------------------------------------------------------------------
 # 3. Recuperation de la config (repo prive)
 # ---------------------------------------------------------------------------
