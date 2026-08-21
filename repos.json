@@ -1,0 +1,13 @@
+{
+	"banque-en-ligne": [
+		{ "name": "banque-en-ligne-v2-2026", "repo_url": "https://github.com/torskint/banque-en-ligne-v2-2026.git", "branch": "main" },
+		{ "name": "Banque-en-Ligne-V1-2023", "repo_url": "https://github.com/torskint/Systeme-de-Gestion-de-Banque-en-Ligne-V1-2023.git", "branch": "main" }
+	],
+
+	"site-de-pret": [
+		{ "name": "finance-loan-2026-v1", "repo_url": "https://github.com/torskint/finance-loan-2026-v1.git", "branch": "main" },
+		{ "name": "finance-loan-2026-v2", "repo_url": "https://github.com/torskint/finance-loan-2026-v2.git", "branch": "main" },
+		{ "name": "finance-loan-2026-v3", "repo_url": "https://github.com/torskint/finance-loan-2026-v3.git", "branch": "main" },
+		{ "name": "finance-loan-2026-v1-canada", "repo_url": "https://github.com/torskint/finance-loan-2026-v1-canada.git", "branch": "main" }
+	]
+}
