@@ -1,13 +1,79 @@
 {
 	"banque-en-ligne": [
-		{ "name": "banque-en-ligne-v2-2026", "repo_url": "https://github.com/torskint/banque-en-ligne-v2-2026.git", "branch": "main" },
-		{ "name": "Banque-en-Ligne-V1-2023", "repo_url": "https://github.com/torskint/Systeme-de-Gestion-de-Banque-en-Ligne-V1-2023.git", "branch": "main" }
+		{
+			"name": "banque-en-ligne-v2-2026",
+			"repo_url": "https://github.com/torskint/banque-en-ligne-v2-2026.git",
+			"branch": "main"
+		},
+		{
+			"name": "Banque-en-Ligne-V1-2023",
+			"repo_url": "https://github.com/torskint/Systeme-de-Gestion-de-Banque-en-Ligne-V1-2023.git",
+			"branch": "main"
+		}
 	],
 
-	"site-de-pret": [
-		{ "name": "finance-loan-2026-v1", "repo_url": "https://github.com/torskint/finance-loan-2026-v1.git", "branch": "main" },
-		{ "name": "finance-loan-2026-v2", "repo_url": "https://github.com/torskint/finance-loan-2026-v2.git", "branch": "main" },
-		{ "name": "finance-loan-2026-v3", "repo_url": "https://github.com/torskint/finance-loan-2026-v3.git", "branch": "main" },
-		{ "name": "finance-loan-2026-v1-canada", "repo_url": "https://github.com/torskint/finance-loan-2026-v1-canada.git", "branch": "main" }
+	"site-de-pret[new]": [
+		{
+			"name": "finance-loan-2026-v1",
+			"repo_url": "https://github.com/torskint/finance-loan-2026-v1.git",
+			"branch": "main"
+		},
+		{
+			"name": "finance-loan-2026-v2",
+			"repo_url": "https://github.com/torskint/finance-loan-2026-v2.git",
+			"branch": "main"
+		},
+		{
+			"name": "finance-loan-2026-v3",
+			"repo_url": "https://github.com/torskint/finance-loan-2026-v3.git",
+			"branch": "main"
+		},
+		{
+			"name": "finance-loan-2026-v1-canada",
+			"repo_url": "https://github.com/torskint/finance-loan-2026-v1-canada.git",
+			"branch": "main"
+		}
+	],
+
+	"site-de-pret[ancien]": [
+		{
+			"name": "finance-website-2025-one",
+			"repo_url": "https://github.com/torskint/finance-website-2025-one.git",
+			"branch": "main"
+		},
+		{
+			"name": "finance-website-2025-two",
+			"repo_url": "https://github.com/torskint/finance-website-2025-two.git",
+			"branch": "main"
+		},
+		{
+			"name": "finance-website-2025-three",
+			"repo_url": "https://github.com/torskint/finance-website-2025-three.git",
+			"branch": "main"
+		}
+	],
+
+	"avocat-app[ancien]": [
+		{
+			"name": "avocat-app",
+			"repo_url": "https://github.com/torskint/avocat-app.git",
+			"branch": "main"
+		}
+	],
+
+	"Permitrix[ancien]": [
+		{
+			"name": "Permitrix",
+			"repo_url": "https://github.com/torskint/Permitrix.git",
+			"branch": "main"
+		}
+	],
+
+	"wire-transfer-tracking[ancien]": [
+		{
+			"name": "wire-transfer-tracking",
+			"repo_url": "https://github.com/torskint/wire-transfer-tracking.git",
+			"branch": "main"
+		}
 	]
 }
