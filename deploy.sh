@@ -195,8 +195,13 @@ git clone --branch "$repo_branch" --depth 1 -- "$clone_url" "$TMP_CLONE_DIR" \
 # ---------------------------------------------------------------------------
 # 7. Installation Composer
 # ---------------------------------------------------------------------------
+# --no-scripts : de nombreux hebergements mutualises desactivent proc_open
+# cote PHP, ce qui fait echouer le script post-install 'artisan
+# package:discover' lance par Composer (il a besoin de spawner un
+# sous-processus). On l'execute nous-memes juste apres, directement depuis
+# bash, ce qui ne necessite pas proc_open.
 info "Installation des dependances Composer..."
-( cd "$TMP_CLONE_DIR" && composer install --no-dev --optimize-autoloader ) \
+( cd "$TMP_CLONE_DIR" && composer install --no-dev --optimize-autoloader --no-scripts ) \
     || err "echec de 'composer install'."
 
 # ---------------------------------------------------------------------------
@@ -205,6 +210,10 @@ info "Installation des dependances Composer..."
 [ -f "${TMP_CLONE_DIR}/.env.example" ] || err "'.env.example' introuvable dans le repo clone."
 cp -f "${TMP_CLONE_DIR}/.env.example" "${TMP_CLONE_DIR}/.env"
 info ".env cree a partir de .env.example."
+
+info "Decouverte des packages Laravel (package:discover)..."
+( cd "$TMP_CLONE_DIR" && php artisan package:discover --ansi ) \
+    || err "echec de 'php artisan package:discover'."
 
 # ---------------------------------------------------------------------------
 # 9. Confirmation avant ecrasement de public_html/
