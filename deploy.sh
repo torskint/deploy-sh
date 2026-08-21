@@ -36,10 +36,21 @@ require_cmd() {
     command -v "$1" >/dev/null 2>&1 || err "la commande '$1' est requise mais introuvable dans le PATH."
 }
 
+# Extrait une valeur du JSON de config via PHP (pas de dependance a jq).
+# Usage: json_query <fichier_json> <arg_php...>  -- le script PHP recoit le
+# chemin du fichier JSON dans $argv[1] et les arguments suivants dans $argv[2+].
+json_query() {
+    php -r "$1" -- "${@:2}"
+}
+
 TMP_CLONE_DIR=""
+CONFIG_FILE_TMP=""
 cleanup() {
     if [ -n "$TMP_CLONE_DIR" ] && [ -d "$TMP_CLONE_DIR" ]; then
         rm -rf -- "$TMP_CLONE_DIR"
+    fi
+    if [ -n "$CONFIG_FILE_TMP" ] && [ -f "$CONFIG_FILE_TMP" ]; then
+        rm -f -- "$CONFIG_FILE_TMP"
     fi
 }
 trap cleanup EXIT
@@ -49,7 +60,6 @@ trap cleanup EXIT
 # ---------------------------------------------------------------------------
 require_cmd git
 require_cmd curl
-require_cmd jq
 require_cmd php
 require_cmd composer
 
@@ -69,17 +79,25 @@ info "Recuperation de la configuration des repos..."
 
 config_url="${GITHUB_API}/repos/${CONFIG_REPO_OWNER}/${CONFIG_REPO_NAME}/contents/${CONFIG_FILE_PATH}?ref=${CONFIG_BRANCH}"
 
-config_json=$(curl -fsSL \
+CONFIG_FILE_TMP=$(mktemp)
+curl -fsSL \
     -H "Authorization: token ${GITHUB_TOKEN}" \
     -H "Accept: application/vnd.github.raw" \
-    "$config_url") || err "impossible de recuperer le fichier de config depuis GitHub (${config_url})."
+    "$config_url" -o "$CONFIG_FILE_TMP" \
+    || err "impossible de recuperer le fichier de config depuis GitHub (${config_url})."
 
-echo "$config_json" | jq empty >/dev/null 2>&1 || err "le fichier de config recupere n'est pas un JSON valide."
+json_query '
+    $d = json_decode(file_get_contents($argv[1]));
+    exit(json_last_error() === JSON_ERROR_NONE && is_object($d) ? 0 : 1);
+' "$CONFIG_FILE_TMP" || err "le fichier de config recupere n'est pas un JSON valide."
 
 # ---------------------------------------------------------------------------
 # 4. Menu categories
 # ---------------------------------------------------------------------------
-mapfile -t categories < <(echo "$config_json" | jq -r 'keys[]')
+mapfile -t categories < <(json_query '
+    $d = json_decode(file_get_contents($argv[1]), true);
+    foreach (array_keys($d) as $k) { echo $k . "\n"; }
+' "$CONFIG_FILE_TMP")
 
 [ "${#categories[@]}" -gt 0 ] || err "aucune categorie trouvee dans le fichier de config."
 
@@ -102,7 +120,11 @@ selected_category="${categories[$((cat_choice - 1))]}"
 # ---------------------------------------------------------------------------
 # 5. Menu repos de la categorie choisie
 # ---------------------------------------------------------------------------
-mapfile -t repo_names < <(echo "$config_json" | jq -r --arg cat "$selected_category" '.[$cat][].name')
+mapfile -t repo_names < <(json_query '
+    $d = json_decode(file_get_contents($argv[1]), true);
+    $cat = $argv[2];
+    foreach (($d[$cat] ?? []) as $item) { echo $item["name"] . "\n"; }
+' "$CONFIG_FILE_TMP" "$selected_category")
 
 [ "${#repo_names[@]}" -gt 0 ] || err "aucun repo trouve dans la categorie '${selected_category}'."
 
@@ -122,11 +144,20 @@ esac
 
 repo_index=$((repo_choice - 1))
 selected_repo_name="${repo_names[$repo_index]}"
-repo_url=$(echo "$config_json" | jq -r --arg cat "$selected_category" --argjson idx "$repo_index" '.[$cat][$idx].repo_url')
-repo_branch=$(echo "$config_json" | jq -r --arg cat "$selected_category" --argjson idx "$repo_index" '.[$cat][$idx].branch')
 
-[ -n "$repo_url" ] && [ "$repo_url" != "null" ] || err "repo_url manquant pour '${selected_repo_name}'."
-[ -n "$repo_branch" ] && [ "$repo_branch" != "null" ] || err "branch manquante pour '${selected_repo_name}'."
+mapfile -t repo_info < <(json_query '
+    $d = json_decode(file_get_contents($argv[1]), true);
+    $cat = $argv[2];
+    $idx = (int)$argv[3];
+    $item = $d[$cat][$idx] ?? [];
+    echo ($item["repo_url"] ?? "") . "\n";
+    echo ($item["branch"] ?? "") . "\n";
+' "$CONFIG_FILE_TMP" "$selected_category" "$repo_index")
+repo_url="${repo_info[0]:-}"
+repo_branch="${repo_info[1]:-}"
+
+[ -n "$repo_url" ] || err "repo_url manquant pour '${selected_repo_name}'."
+[ -n "$repo_branch" ] || err "branch manquante pour '${selected_repo_name}'."
 
 info "Repo selectionne : ${selected_repo_name} (${repo_url}, branche ${repo_branch})"
 
