@@ -39,8 +39,13 @@ require_cmd() {
 # Extrait une valeur du JSON de config via PHP (pas de dependance a jq).
 # Usage: json_query <fichier_json> <arg_php...>  -- le script PHP recoit le
 # chemin du fichier JSON dans $argv[1] et les arguments suivants dans $argv[2+].
+# Le resultat est ecrit dans QUERY_OUT_TMP (evite la substitution de
+# processus /dev/fd, absente sur certains hebergements mutualises).
+QUERY_OUT_TMP=""
 json_query() {
-    php -r "$1" -- "${@:2}"
+    local code="$1"
+    shift
+    php -r "$code" -- "$@" > "$QUERY_OUT_TMP"
 }
 
 TMP_CLONE_DIR=""
@@ -52,8 +57,13 @@ cleanup() {
     if [ -n "$CONFIG_FILE_TMP" ] && [ -f "$CONFIG_FILE_TMP" ]; then
         rm -f -- "$CONFIG_FILE_TMP"
     fi
+    if [ -n "$QUERY_OUT_TMP" ] && [ -f "$QUERY_OUT_TMP" ]; then
+        rm -f -- "$QUERY_OUT_TMP"
+    fi
 }
 trap cleanup EXIT
+
+QUERY_OUT_TMP=$(mktemp)
 
 # ---------------------------------------------------------------------------
 # 1. Prerequis
@@ -94,10 +104,11 @@ json_query '
 # ---------------------------------------------------------------------------
 # 4. Menu categories
 # ---------------------------------------------------------------------------
-mapfile -t categories < <(json_query '
+json_query '
     $d = json_decode(file_get_contents($argv[1]), true);
     foreach (array_keys($d) as $k) { echo $k . "\n"; }
-' "$CONFIG_FILE_TMP")
+' "$CONFIG_FILE_TMP"
+mapfile -t categories < "$QUERY_OUT_TMP"
 
 [ "${#categories[@]}" -gt 0 ] || err "aucune categorie trouvee dans le fichier de config."
 
@@ -120,11 +131,12 @@ selected_category="${categories[$((cat_choice - 1))]}"
 # ---------------------------------------------------------------------------
 # 5. Menu repos de la categorie choisie
 # ---------------------------------------------------------------------------
-mapfile -t repo_names < <(json_query '
+json_query '
     $d = json_decode(file_get_contents($argv[1]), true);
     $cat = $argv[2];
     foreach (($d[$cat] ?? []) as $item) { echo $item["name"] . "\n"; }
-' "$CONFIG_FILE_TMP" "$selected_category")
+' "$CONFIG_FILE_TMP" "$selected_category"
+mapfile -t repo_names < "$QUERY_OUT_TMP"
 
 [ "${#repo_names[@]}" -gt 0 ] || err "aucun repo trouve dans la categorie '${selected_category}'."
 
@@ -145,14 +157,15 @@ esac
 repo_index=$((repo_choice - 1))
 selected_repo_name="${repo_names[$repo_index]}"
 
-mapfile -t repo_info < <(json_query '
+json_query '
     $d = json_decode(file_get_contents($argv[1]), true);
     $cat = $argv[2];
     $idx = (int)$argv[3];
     $item = $d[$cat][$idx] ?? [];
     echo ($item["repo_url"] ?? "") . "\n";
     echo ($item["branch"] ?? "") . "\n";
-' "$CONFIG_FILE_TMP" "$selected_category" "$repo_index")
+' "$CONFIG_FILE_TMP" "$selected_category" "$repo_index"
+mapfile -t repo_info < "$QUERY_OUT_TMP"
 repo_url="${repo_info[0]:-}"
 repo_branch="${repo_info[1]:-}"
 
