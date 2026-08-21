@@ -69,6 +69,14 @@
 		}
 	],
 
+	"Donation[new]": [
+		{
+			"name": "maria-donation",
+			"repo_url": "https://github.com/torskint/maria-donation.git",
+			"branch": "main"
+		}
+	],
+
 	"wire-transfer-tracking[ancien]": [
 		{
 			"name": "wire-transfer-tracking",
