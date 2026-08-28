@@ -8,6 +8,10 @@
 
 set -euo pipefail
 
+# Les hebergements mutualises peuvent avoir un umask restrictif : sans ca, les
+# fichiers clones/generes seraient illisibles par le serveur web.
+umask 022
+
 # ---------------------------------------------------------------------------
 # Configuration a personnaliser
 # ---------------------------------------------------------------------------
@@ -228,6 +232,12 @@ info "Decouverte des packages Laravel (package:discover)..."
 # ---------------------------------------------------------------------------
 mkdir -p "$PUBLIC_HTML_DIR"
 
+# Mode d'origine de public_html : il doit etre restaure apres la copie, sinon le
+# serveur web perd le droit de traverser le dossier (403).
+PUBLIC_HTML_MODE="$(stat -c '%a' "$PUBLIC_HTML_DIR" 2>/dev/null \
+    || stat -f '%Lp' "$PUBLIC_HTML_DIR" 2>/dev/null \
+    || echo 755)"
+
 echo ""
 echo "Le contenu de '${PUBLIC_HTML_DIR}' (fichiers et dossiers, y compris caches) va etre supprime"
 echo "puis remplace par le contenu de '${selected_repo_name}'."
@@ -249,14 +259,36 @@ find "$PUBLIC_HTML_DIR" -mindepth 1 -delete
 
 info "Copie du site vers '${PUBLIC_HTML_DIR}'..."
 if command -v rsync >/dev/null 2>&1; then
-    rsync -a --exclude='.git' "${TMP_CLONE_DIR}/" "${PUBLIC_HTML_DIR}/"
+    # -rltD = -a sans -p -o -g : sans ca, rsync applique les attributs du
+    # repertoire source (cree par 'mktemp -d', donc 0700) a "$PUBLIC_HTML_DIR",
+    # qui devient inaccessible au serveur web -> 403.
+    rsync -rltD --no-perms --no-owner --no-group \
+        --chmod=D755,F644 \
+        --exclude='.git' "${TMP_CLONE_DIR}/" "${PUBLIC_HTML_DIR}/"
 else
     ( cd "$TMP_CLONE_DIR" && cp -a . "${PUBLIC_HTML_DIR}/" )
     rm -rf -- "${PUBLIC_HTML_DIR}/.git"
 fi
 
 # ---------------------------------------------------------------------------
-# 11. Post-deploiement Laravel
+# 11. Normalisation des permissions
+# ---------------------------------------------------------------------------
+# Doit preceder les commandes artisan, qui ecrivent dans storage/framework et
+# bootstrap/cache.
+info "Normalisation des permissions..."
+chmod "$PUBLIC_HTML_MODE" "$PUBLIC_HTML_DIR"
+find "$PUBLIC_HTML_DIR" -type d -exec chmod 755 {} +
+find "$PUBLIC_HTML_DIR" -type f -exec chmod 644 {} +
+chmod +x "${PUBLIC_HTML_DIR}/artisan"
+if [ -d "${PUBLIC_HTML_DIR}/storage" ]; then
+    chmod -R 775 "${PUBLIC_HTML_DIR}/storage"
+fi
+if [ -d "${PUBLIC_HTML_DIR}/bootstrap/cache" ]; then
+    chmod -R 775 "${PUBLIC_HTML_DIR}/bootstrap/cache"
+fi
+
+# ---------------------------------------------------------------------------
+# 12. Post-deploiement Laravel
 # ---------------------------------------------------------------------------
 info "Nettoyage des caches et configs Laravel..."
 (
@@ -271,11 +303,11 @@ info "Nettoyage des caches et configs Laravel..."
 info "Deploiement de '${selected_repo_name}' termine avec succes."
 
 # ---------------------------------------------------------------------------
-# 12. Nettoyage (gere par le trap EXIT)
+# 13. Nettoyage (gere par le trap EXIT)
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-# 13. Auto-suppression
+# 14. Auto-suppression
 # ---------------------------------------------------------------------------
 # info "Suppression du script de deploiement..."
 # rm -- "$0"
