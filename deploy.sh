@@ -16,7 +16,8 @@ CONFIG_REPO_NAME="deploy-sh"
 CONFIG_FILE_PATH="repos.json"
 CONFIG_BRANCH="main"
 
-PUBLIC_HTML_DIR="${PUBLIC_HTML_DIR:-$HOME/public_html}"
+# PUBLIC_HTML_DIR="${PUBLIC_HTML_DIR:-$HOME/public_html}"
+PUBLIC_HTML_DIR="$(pwd)"
 
 GITHUB_API="https://api.github.com"
 
@@ -276,5 +277,10 @@ info "Deploiement de '${selected_repo_name}' termine avec succes."
 # ---------------------------------------------------------------------------
 # 13. Auto-suppression
 # ---------------------------------------------------------------------------
-info "Suppression du script de deploiement..."
-rm -- "$0"
+# info "Suppression du script de deploiement..."
+# rm -- "$0"
+
+if [ -f "$0" ]; then
+    info "Suppression du script de deploiement..."
+    rm -f -- "$0"
+fi
